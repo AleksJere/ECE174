@@ -269,6 +269,22 @@ def analyze_multi_class(predicted, expected):
         accuracy_df.loc[f"Accuracy for {i}"] = numerator/denominator
     print(accuracy_df)
 
+
+def change_the_set(train_x,L,function_feature):
+    W = np.random.normal(0, 1, (train_x.shape[1],L))
+    b = np.random.normal(0, 1, (1,L))
+    new_train_x = []
+    for i in range(len(train_x)):
+        new_train_x = (train_x[i]@W+b)
+    new_train_x = np.array(new_train_x)
+    
+    if function_feature == 2:
+        new_train_x = 1/(1+np.exp(-new_train_x))
+    
+            
+    
+    return new_train_x
+
 if __name__ == "__main__":
     file = "C:/Users/jerem/Downloads/mnist.mat"
 
@@ -304,7 +320,7 @@ if __name__ == "__main__":
     train_x /= 255
     test_x.astype(float)
     test_x  /=255 #normalizing  as float then /255 to normalize between 0 and 1
-    
+    print(train_x.shape)
     
     
     
@@ -314,8 +330,8 @@ if __name__ == "__main__":
     
     
     
-    predicted_multi = one_vs_all_multi(train_x,train_y,test_x,test_y)
-    analyze_multi_class(predicted_multi, test_y)
+    #predicted_multi = one_vs_all_multi(train_x,train_y,test_x,test_y)
+    #analyze_multi_class(predicted_multi, test_y)
     #(ovo_train_x,ovo_train_y) = one_vs_one_train_setup(train_x,train_y, (1,2)) #returns the training data for the one vs one classifier
     
     #binary_ovo_predicted = one_vs_one_trainer(ovo_train_x,ovo_train_y,test_x,test_y, (1,2))
