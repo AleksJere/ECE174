@@ -9,41 +9,84 @@ import scipy.linalg
 import numpy as np
 import pandas as pd
 def create_weights(train_x,processed_train_y):
-    
+    """
+
+    Parameters
+    ----------
+    train_x : TYPE np.array
+        DESCRIPTION.
+        
+        this is our training set we will use this in conjunction with the normal equations (pseudoinverse) 
+        
+    processed_train_y : TYPE
+        DESCRIPTION.
+
+        this is our expected values (0-9) except we have alreafy run these expected values through a processor which sets
+        1 -> to the value we are looking for
+        -1 -> to any other digit        
+
+    Returns
+    -------
+    pre_signed : TYPE
+        DESCRIPTION.
+        
+        these are our weights matrix times our y, this gives us the final solution to the normal equation
+
+    """
 
     solution = scipy.linalg.pinv(train_x)
 
-    pre_signed = solution@processed_train_y #gives a matrix that is our solution to our normal equation weights 
+    pre_signed = solution@processed_train_y #gives a matrix that is our weights 
 
     return pre_signed
 
 def if_matches(testing,expected):
+    """
+    Parameters
+    ----------
+    testing : TYPE np.array
+        DESCRIPTION.
+        
+        this is what our array is which we want to change to 1 or -1 based on what our expected value is, 
+        
+    expected : TYPE integer
+        DESCRIPTION.
+        
+        The integer which we are going to use in relation to setting our y = 1 for the digit we want to find and y=-1 for the
+        other digits
+        
+    Returns
+    -------
+    prediction_train_conversion : TYPE np.array
+        DESCRIPTION.
+        
+        This is our new y (our training or expected results (the real digit value of our handwritten digits)) 
+        that has been processed to -1 and 1 for the given digit
+        
+        
+    """
     prediction_train_conversion = np.where(testing == expected,1,-1)
     return prediction_train_conversion 
 def binary_classifier(digit_to_predict,test_x,test_y,train_x,train_y):
     """
-    basically the main file, need to fix how it looks at some point
-
     Parameters
     ----------
     digit_to_predict : TYPE
         DESCRIPTION.
+        this is the digit we are going to predict for one vs all classifier
 
     Returns
     -------
     predictions_train_binary : TYPE
         DESCRIPTION.
-
+        this reutrns our prediction in binary (1 means it is our digit) (-1 means not our digit)
     """
     
     weights = create_weights(train_x,if_matches(train_y,digit_to_predict)) #using test data now
 
     predictions_on_train = test_x@weights
 
-    predictions_train_binary = np.sign(predictions_on_train)
-
-   # print(predictions_train_binary.shape)
-    
+    predictions_train_binary = np.sign(predictions_on_train)   
     
     return predictions_train_binary
 
@@ -53,9 +96,12 @@ def analyze_binary(predicted_value,expected_value):
 
     Parameters
     ----------
-    predicted_value : TYPE
+    predicted_value : TYPE numpy array
         DESCRIPTION.
-    expected_value : TYPE
+        
+        the values that my binary classifier predicted
+        
+    expected_value : TYPE numpy array
         DESCRIPTION.
         ANALYZE THE BINARY CLASSIFIER USING confusion matrix
 
@@ -92,24 +138,27 @@ def analyze_binary(predicted_value,expected_value):
     false_positive_rate = false_positive / expected_false
     true_negative_rate = true_negative / expected_false
     precision = true_positive / (true_positive + false_positive)
-    data = [error_rate,true_positive_rate,false_positive_rate,true_negative_rate,precision]
-    rates = pd.DataFrame(data,columns = ["rates"], index = ["error_rate","true_positive_rate","false_positive_rate","true_negative_rate","precision"])
+    false_negative_rate = false_negative / expected_false
+    data = [error_rate,true_positive_rate,false_positive_rate,true_negative_rate,false_negative_rate,precision]
+    rates = pd.DataFrame(data,columns = ["rates"], index = ["error_rate","true_positive_rate","false_positive_rate","true_negative_rate","False Negative","precision"])
     print(confusion_matrix)
+    print("\n")
     print(rates)
     
 def one_vs_all_multi(train_x,train_y,test_x,test_y):
-    
+    #print(train_x.shape)
+    #print(test_x.shape)
     one_vs_all_weights = np.empty((train_x.shape[1],0))
     for i in range(10):
         x= create_weights(train_x,if_matches(train_y,i))
         #print(x)
         
-        one_vs_all_weights = np.concatenate([one_vs_all_weights,x],axis = 1) # this is all the weights for the different numbers 0-9
-        
-    preprocess_pred = test_x@one_vs_all_weights
+        one_vs_all_weights = np.concatenate((one_vs_all_weights,x),axis = 1) # this is all the weights for the different numbers 0-9
     
+    preprocess_pred = test_x@one_vs_all_weights
+    print(f"this is preprocess pred: {preprocess_pred}")
     prediction = np.argmax(preprocess_pred,axis = 1)
-    #print(prediction.shape)
+    print(f"this is prediction: {prediction}")
     return prediction
 
 def one_vs_one_train_setup(train_x,train_y, tuple_to_not_remove):
@@ -238,6 +287,8 @@ def run_ovo_all(train_x,train_y,test_x,test_y):
 def analyze_multi_class(predicted, expected):
     columns = [f'Predicted {i}' for i in range(10)]
     indexes = [f'Expected {i}' for i in range(10)]
+    print(f"this is expecteds shape : {expected.shape}")
+    print(f"this is predicteds shape : {predicted.shape}")
     columns.append('Totals')
     indexes.append('Totals')
     confusion_multi_class = pd.DataFrame(data = None, columns = columns, index = indexes)
@@ -271,18 +322,27 @@ def analyze_multi_class(predicted, expected):
 
 
 def change_the_set(train_x,L,function_feature):
+    print(f"trainx  shape[1] : {train_x.shape[1]}")
     W = np.random.normal(0, 1, (train_x.shape[1],L))
     b = np.random.normal(0, 1, (1,L))
-    new_train_x = []
-    for i in range(len(train_x)):
-        new_train_x = (train_x[i]@W+b)
-    new_train_x = np.array(new_train_x)
+    #print(f"train_x shape: {train_x.shape}") 
+    #print(f"W shape: {W.shape}") 
+    #print(f"b shape: {b.shape}") 
+    new_train_x = train_x@W + b
+
     
-    if function_feature == 2:
+    #setting up our features by running them through the chosen feature equation
+    if function_feature == 1:
+        new_train_x = new_train_x
+    elif function_feature == 2:
         new_train_x = 1/(1+np.exp(-new_train_x))
-    
-            
-    
+    elif function_feature == 3:
+        new_train_x = np.sin(new_train_x)
+    elif function_feature == 4:
+        new_train_x = np.maximum(new_train_x,0)
+    print(f"new train_x shape: {new_train_x.shape}")       
+
+    #print(f"new train_x shape: {new_train_x.shape}")
     return new_train_x
 
 if __name__ == "__main__":
@@ -290,8 +350,8 @@ if __name__ == "__main__":
 
     
     learning_dict = {}
-   
-    
+    L = 1000 #feature mapping dimension
+    function_feature = 2 #changing our function we pass through on our feature mapping (1-4)
     #testX is the testing data set
     #testY is the testing expected real values
     #trainX is the training data set
@@ -302,39 +362,87 @@ if __name__ == "__main__":
     train_x = learning_dict['trainX']
     train_y = learning_dict['trainY'].transpose() #to make it a column vector
 
-
+    
+    
     ones = np.ones((train_x.shape[0],1))
     ones_test = np.ones((test_x.shape[0],1))
+    
+    
+    
+    train_x = train_x.astype(float) #normalizing as float then /255 to normalize between 0 and 1
+
+    train_x /= 255
+    test_x = test_x.astype(float)
+    test_x  /=255 #normalizing  as float then /255 to normalize between 0 and 1
+
+    
+    
+    new_train_x = change_the_set(train_x,L,function_feature) #creating our new training set before we add our ones bias
+    new_test_x = change_the_set(test_x,L,function_feature)
+    
+    new_test_ones = np.ones((new_test_x.shape[0],1))
+    new_train_ones = np.ones((new_train_x.shape[0],1))
+    
+    new_train_x = np.append(new_train_x,new_train_ones,axis = 1)
+    new_test_x = np.append(new_test_x,new_test_ones,axis = 1)
+    
+    
     train_x = np.append(train_x,ones, axis = 1)
     test_x = np.append(test_x,ones_test, axis = 1)
     
     cols_to_remove = np.all(train_x == 0, axis=0)
 
-    # Remove these columns
+
+
     train_x = train_x[:, ~cols_to_remove]
 
-    # Remove these columns
     test_x = test_x[:, ~cols_to_remove]
 
-    train_x.astype(float) #normalizing as float then /255 to normalize between 0 and 1
-    train_x /= 255
-    test_x.astype(float)
-    test_x  /=255 #normalizing  as float then /255 to normalize between 0 and 1
-    print(train_x.shape)
     
     
     
-    #predictions_train_binary = binary_classifier(0,test_x,test_y,train_x,train_y)
-    
-    #analyze_binary(predictions_train_binary,if_matches(test_y,0)) #running on test data now
+    #print(train_x.shape)
     
     
+    print("\n")
+    predictions_train_binary = binary_classifier(0,test_x,test_y,train_x,train_y)
     
-    #predicted_multi = one_vs_all_multi(train_x,train_y,test_x,test_y)
-    #analyze_multi_class(predicted_multi, test_y)
+    analyze_binary(predictions_train_binary,if_matches(test_y,0)) #running on test data now
+    
+    
+    '''
+    predicted_multi = one_vs_all_multi(train_x,train_y,test_x,test_y)
+    analyze_multi_class(predicted_multi, test_y)
     #(ovo_train_x,ovo_train_y) = one_vs_one_train_setup(train_x,train_y, (1,2)) #returns the training data for the one vs one classifier
     
     #binary_ovo_predicted = one_vs_one_trainer(ovo_train_x,ovo_train_y,test_x,test_y, (1,2))
+    '''
+    """
+    running our feature engineering on training data. 
+    """
+    '''
+    
+    predicted_featured_multi = one_vs_all_multi(new_train_x,train_y,new_train_x,train_y) #testing on the training data we add training data twice because the function signature asks for the data to test on seperately
+
+    analyze_multi_class(predicted_featured_multi, train_y)# once again were running on training data ( I assume its going to be overfitting)
+
+    #now lets try testing data
+    '''
+    '''
+    running our new feature space on the testing data
+    '''
+    '''
+    predicted_featured_multi_test = one_vs_all_multi(new_train_x,train_y,new_test_x,test_y) #testing on the training data we add training data twice because the function signature asks for the data to test on seperately
+
+    analyze_multi_class(predicted_featured_multi_test, test_y)
+    
+    '''
+    
+    
+    #predicted_featured_multi_test = one_vs_all_multi(new_train_x,train_y,new_test_x,test_y)
+    #print(f"this is  predicted_featured_multi_test shape : { predicted_featured_multi_test.shape}")
+    #analyze_multi_class(predicted_featured_multi_test, test_y)
+    
     """
     guesses = run_ovo_all(train_x,train_y,test_x,test_y)
     print(guesses.shape)
