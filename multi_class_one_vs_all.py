@@ -545,11 +545,11 @@ if __name__ == "__main__":
     
     analyze_multi_class(guesses_featured, test_y)
     '''
-    L_features = [100*i for i in range(1,50)]
+    L_features = [100*i+500 for i in range(1,10)]
     
-    error_train = [0 for i in range(1,50)]
+    error_train = [0 for i in range(1,10)]
     
-    error_test = [0 for i in range(1,50)]
+    error_test = [0 for i in range(1,10)]
     
     
     for index,value in enumerate(L_features):
