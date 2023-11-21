@@ -534,7 +534,7 @@ if __name__ == "__main__":
     '''
     We are now implementing our feature engineering onto the one vs one classifier
     '''
-    
+    '''
     guesses_featured = run_ovo_all(new_train_x,train_y,new_train_x,train_y)
 
 
@@ -544,12 +544,12 @@ if __name__ == "__main__":
 
     
     analyze_multi_class(guesses_featured, test_y)
+    '''
+    L_features = [100*i for i in range(1,50)]
     
-    L_features = [50*i for i in range(1,200)]
+    error_train = [0 for i in range(1,50)]
     
-    error_train = [0 for i in range(1,200)]
-    
-    error_test = [0 for i in range(1,200)]
+    error_test = [0 for i in range(1,50)]
     
     
     for index,value in enumerate(L_features):
@@ -573,21 +573,23 @@ if __name__ == "__main__":
         guesses_featured_test = run_ovo_all(new_train_x,train_y,new_test_x,test_y)
 
         error_test[index] = analyze_multi_class(guesses_featured_test, test_y)
-        
+        plt.subplot(2, 1, 1)
         plt.plot(L_features, error_train)
-        
+        plt.title("training data")
+        plt.xlabel("Dimensions")
+        plt.ylabel("Error")
+        plt.subplot(2, 1, 2)
         plt.plot(L_features, error_test)
+        plt.title("test data")
+        plt.xlabel("Dimensions")
+        plt.ylabel("Error")
+        plt.show()
         
     '''
     plt.plot(L_features, error_train)
     
     plt.plot(L_features, error_test)
     '''
-    
-    
-    
-    
-    
     
     #analyze multiclass now returns error rate aswell
     
