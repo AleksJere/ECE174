@@ -8,6 +8,7 @@ import scipy.io as sp
 import scipy.linalg
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 def create_weights(train_x,processed_train_y):
     """
 
@@ -292,6 +293,7 @@ def run_ovo_all(train_x,train_y,test_x,test_y):
             list_of_weights.append(weights)
     weights = np.array(list_of_weights)
     weights = np.squeeze(weights)
+
     tested_values = test_x@(weights.transpose())
     tested_values_binary = np.sign(tested_values)
     tuple_columns = [(i, j) for i in range(9) for j in range(i+1, 10)]
@@ -366,19 +368,42 @@ def analyze_multi_class(predicted, expected):
         
         accuracy_df.loc[f"Accuracy for {i}"] = numerator/denominator
     print(accuracy_df)
+    return diagonal_sum
 
 
 def change_the_set(train_x,test_x,L,function_feature):
+    '''
+    
 
+    Parameters
+    ----------
+    train_x : TYPE np array
+        DESCRIPTION.
+    test_x : TYPE np array
+        DESCRIPTION.
+    L : TYPE integer
+        DESCRIPTION.
+        This is the dimensionality of our feature space, we can reduce or
+        increase the dimensionality
+    function_feature : TYPE integer
+        DESCRIPTION.
+        (1-4) this changes which function we use when finalizing our feature space
+    Returns
+    -------
+    new_train_x : TYPE np array
+        DESCRIPTION.
+        our new feature space training data
+    new_test_x : TYPE np array
+        DESCRIPTION.
+        our new feature space testing data
+
+    '''
     W = np.random.normal(0, 1, (train_x.shape[1],L))
     b = np.random.normal(0, 1, (1,L))
  
     new_train_x = train_x@W + b
-    new_test_x = test_x@W+b
-    
+    new_test_x = test_x@W + b
 
-    
-    #setting up our features by running them through the chosen feature equation
     if function_feature == 1:
         new_train_x = new_train_x
         new_test_x = new_test_x
@@ -400,7 +425,7 @@ if __name__ == "__main__":
     
     learning_dict = {}
     L = 1000 #feature mapping dimension
-    function_feature = 3 #changing our function we pass through on our feature mapping (1-4)
+    function_feature = 4 #changing our function we pass through on our feature mapping (1-4)
     #testX is the testing data set
     #testY is the testing expected real values
     #trainX is the training data set
@@ -481,7 +506,7 @@ if __name__ == "__main__":
     '''
     running our one vs one classifier on both training and testing data
     '''
-    
+    '''
     guesses_train = run_ovo_all(train_x,train_y,train_x,train_y)
 
 
@@ -492,37 +517,84 @@ if __name__ == "__main__":
 
     analyze_multi_class(guesses_test, test_y)
     
-    
-    """
-    running our feature engineering on training data. 
-    """
     '''
     
-    predicted_featured_multi = one_vs_all_multi(new_train_x,train_y,new_train_x,train_y) #testing on the training data we add training data twice because the function signature asks for the data to test on seperately
+    '''
+    Here we implement our feature engineering on the one vs all classifier to test how the error changes
+    '''
+    '''
+    
+    predicted_multi_train_feature = one_vs_all_multi(new_train_x,train_y,new_train_x,train_y)
+    analyze_multi_class(predicted_multi_train_feature, train_y)
+    
+    predicted_multi_test_feature = one_vs_all_multi(new_train_x,train_y,new_test_x,test_y)
+    analyze_multi_class(predicted_multi_test_feature, test_y)
+    
+    '''
+    '''
+    We are now implementing our feature engineering onto the one vs one classifier
+    '''
+    
+    guesses_featured = run_ovo_all(new_train_x,train_y,new_train_x,train_y)
 
-    analyze_multi_class(predicted_featured_multi, train_y)# once again were running on training data ( I assume its going to be overfitting)
 
-    #now lets try testing data
-    '''
-    '''
-    running our new feature space on the testing data
-    '''
-    '''
-    predicted_featured_multi_test = one_vs_all_multi(new_train_x,train_y,new_test_x,test_y) 
-
-    analyze_multi_class(predicted_featured_multi_test, test_y)
-    
-    '''
-    
-    
-    #predicted_featured_multi_test = one_vs_all_multi(new_train_x,train_y,new_test_x,test_y)
-    #print(f"this is  predicted_featured_multi_test shape : { predicted_featured_multi_test.shape}")
-    #analyze_multi_class(predicted_featured_multi_test, test_y)
-    '''
+    analyze_multi_class(guesses_featured, train_y)
     
     guesses_featured = run_ovo_all(new_train_x,train_y,new_test_x,test_y)
 
-
+    
     analyze_multi_class(guesses_featured, test_y)
+    
+    L_features = [50*i for i in range(1,200)]
+    
+    error_train = [0 for i in range(1,200)]
+    
+    error_test = [0 for i in range(1,200)]
+    
+    
+    for index,value in enumerate(L_features):
+        
+        new_train_x,new_test_x = change_the_set(train_x,test_x,value,function_feature)
+        
+        
+        new_test_ones = np.ones((new_test_x.shape[0],1))
+        new_train_ones = np.ones((new_train_x.shape[0],1))
+        
+        new_train_x = np.append(new_train_x,new_train_ones,axis = 1)
+
+        new_test_x = np.append(new_test_x,new_test_ones,axis = 1)
+
+        guesses_featured_train = run_ovo_all(new_train_x,train_y,new_train_x,train_y)
+
+        error_train[index] = analyze_multi_class(guesses_featured_train, train_y)
+        
+
+        
+        guesses_featured_test = run_ovo_all(new_train_x,train_y,new_test_x,test_y)
+
+        error_test[index] = analyze_multi_class(guesses_featured_test, test_y)
+        
+        plt.plot(L_features, error_train)
+        
+        plt.plot(L_features, error_test)
+        
+    '''
+    plt.plot(L_features, error_train)
+    
+    plt.plot(L_features, error_test)
     '''
     
+    
+    
+    
+    
+    
+    #analyze multiclass now returns error rate aswell
+    
+
+
+    
+
+
+
+
