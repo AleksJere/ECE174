@@ -12,13 +12,19 @@ import matplotlib.pyplot as plt
 e = np.e
 
 def gen_data(Gamma,n):
-    inputs = np.random.uniform(-Gamma,Gamma,(n,3))
-    y =  inputs[:, 0] * inputs[:, 1] + inputs[:,2]
-    y = y.reshape(n,1)
+    
+    inputs = np.empty((0,3))
+    outputs = np.empty((0,1))
+    for i in range(n):
+        data = np.random.uniform(-Gamma,Gamma,(3,))
+        inputs = np.vstack((inputs,data))
+        outputs = np.append(outputs,[data[0] * data[1] + data[2]])
 
-    #print(f"this is the shape of inputs {inputs.shape}")
-    #print(f"this is the shape of y {y.shape}")
-    return y,inputs
+
+    outputs = outputs.reshape(-1,1)
+    print(f"this is the shape of inputs {inputs.shape}")
+    print(f"this is the shape of outputs {outputs.shape}")
+    return outputs,inputs
 
 def der_tan_h(x):
     return (4/(((e**x)+(e**(-x)))**2))
@@ -67,8 +73,7 @@ def grad_func(lam,w,i):
     #print(f"size of w {w.shape} ")
     #print(f"size of i {i.shape} ")
     grad_function = np.array((np.tanh(w[1]*i[0] + w[2]*i[1] + w[3]*i[2]+w[4])))
-    #grad_function = grad_function.reshape(-1,1)
-    #print(f"shape of grad_function {grad_function.shape}")
+
 
     grad_function = np.hstack((grad_function,w[0]*der_tan_h(w[1]*i[0]+w[2]*i[1]+w[3]*i[2]+w[4])*i[0]))
     grad_function = np.hstack((grad_function,w[0]*der_tan_h(w[1]*i[0]+w[2]*i[1]+w[3]*i[2]+w[4])*i[1]))
@@ -130,7 +135,6 @@ def levenberg(outputs,inputs,weights = None, iteration_limit = 200,stop_value = 
     residual = np.sum((phi_vector(weights, inputs) - outputs)**2)
     error = residual + lam*np.linalg.norm(weights)
     
-    rho = 1
     
     steps = [rho]
     
@@ -149,14 +153,14 @@ def levenberg(outputs,inputs,weights = None, iteration_limit = 200,stop_value = 
         #print(f"size of inputs in levenberg before phi vecotr {inputs.shape}")
         prediction = phi_vector(weights,inputs)
 
-        exp_values = jacobian@weights -outputs  
-        
-        exp_values = np.vstack((exp_values, math.sqrt(rho)*weights))
+        exp_values = prediction - outputs - jacobian@weights 
+        exp_values = np.vstack((exp_values,np.zeros((weights.shape))))
+        exp_values = np.vstack((exp_values, -1*math.sqrt(rho)*weights))
         
         
         
         new_A = np.vstack((jacobian, math.sqrt(rho)*np.identity(jacobian.shape[1])))
-
+        new_A = np.vstack((new_A, math.sqrt(rho)*np.identity(jacobian.shape[1])))
 
         new_weights = np.linalg.pinv(new_A)@exp_values
         
